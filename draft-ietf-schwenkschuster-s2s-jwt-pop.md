@@ -1,0 +1,347 @@
+---
+title: "WIMSE JWT-based Workload-to-Workload Proof Of Possession"
+abbrev: "WIMSE Workload-to-Workload-JWT-POP"
+category: std
+
+docname: draft-ietf-schwenkschuster-s2s-jwt-pop-latest
+submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
+number:
+date:
+consensus: false
+v: 3
+area: "Applications and Real-Time"
+workgroup: "Workload Identity in Multi System Environments"
+keyword:
+ - workload
+ - identity
+venue:
+  group: "Workload Identity in Multi System Environments"
+  type: "Working Group"
+  mail: "wimse@ietf.org"
+  arch: "https://mailarchive.ietf.org/arch/browse/wimse/"
+  github: "ietf-wg-wimse/draft-ietf-wimse-s2s-protocol"
+  latest: "https://ietf-wg-wimse.github.io/draft-ietf-wimse-s2s-protocol/draft-ietf-wimse-s2s-protocol.html"
+
+author:
+ -
+    fullname: "Arndt Schwenkschuster"
+    organization: SPIRL
+    email: arndts.ietf@gmail.com
+
+normative:
+  RFC5234:
+  RFC7515:
+  RFC7517:
+  RFC7518:
+  RFC7519:
+  RFC7800:
+  RFC8725:
+  RFC9110:
+
+informative:
+  IANA.HTTP.FIELDS: IANA.http-fields
+  IANA.JOSE.ALGS: IANA.jose_web-signature-encryption-algorithms
+  IANA.JWT.CLAIMS: IANA.jwt_claims
+  IANA.MEDIA.TYPES: IANA.media-types
+  IANA.URI.SCHEMES: IANA.uri-schemes
+  RFC9457:
+
+--- abstract
+
+TODO
+
+--- middle
+
+# Introduction
+
+TODO
+
+# Conventions and Definitions
+
+All terminology in this document follows {{?I-D.ietf-wimse-arch}}.
+
+{::boilerplate bcp14-tagged}
+
+# DPoP-Inspired Authentication {#dpop-esque-auth}
+
+This option, inspired by the OAuth DPoP specification {{?RFC9449}}, uses a DPoP-like mechanism to authenticate
+the calling workload in the context of the request. The Workload Identity Token (TODO to-wit) is sent in the request as
+described in (TODO wit-http-header). An additional JWT, the Workload Proof Token (WPT), is signed by the private key
+corresponding to the public key in the WIT. The WPT is sent in the `Workload-Proof-Token` header field of the request.
+The ABNF syntax of the `Workload-Proof-Token` header field is:
+
+~~~ abnf
+WPT =  JWT
+~~~~
+{: #wpt-header-abnf title="Workload-Proof-Token Header Field ABNF"}
+
+where the `JWT` projection is defined in (TODO wit-header-abnf).
+
+A WPT MUST contain the following:
+
+* in the JOSE header:
+    * `alg`: An identifier for an appropriate JWS asymmetric digital signature algorithm corresponding to
+     the confirmation key in the associated WIT. The value MUST match the `alg` value of the `jwk` in the `cnf` claim of the WIT. See (TODO to-wit) for valid values and restrictions.
+    * `typ`: the WPT is explicitly typed, as recommended in {{Section 3.11 of RFC8725}},
+     using the `application/wpt+jwt` media type.
+* in the JWT claims:
+    * `aud`: The audience SHOULD contain the HTTP target URI ({{Section 7.1 of RFC9110}}) of the request
+     to which the WPT is attached, without query or fragment parts. However, there may be some normalization,
+    rewriting or other process that requires the audience to be set to a deployment-specific value.
+    See also (TODO granular-auth) for more details.
+    * `exp`: The expiration time of the WPT (as defined in {{Section 4.1.4 of RFC7519}}). WPT lifetimes MUST be short,
+     e.g., on the order of minutes or seconds.
+    * `jti`: An identifier for the token. The value MUST be unique, at least within the scope of the sender.
+    * `wth`: Hash of the Workload Identity Token, defined in (TODO to-wit). The value is the base64url encoding of the
+     SHA-256 hash of the ASCII encoding of the WIT's value.
+    * `ath`: Hash of the OAuth access token, if present in the request, which might convey end-user identity and/or
+     authorization context of the request. The value, as per {{Section 4.1 of RFC9449}},
+     is the base64url encoding of the SHA-256 hash of the ASCII encoding of the access token's value.
+    * `tth`: Hash of the Txn-Token {{?I-D.ietf-oauth-transaction-tokens}}, if present in the request,
+     which might convey end-user identity and/or authorization context of the request. The value MUST be the result of
+     a base64url encoding (as defined in {{Section 2 of RFC7515}}) of the SHA-256 hash of
+     the ASCII encoding of the associated token's value.
+    * `oth`: Hash(es) of other token(s) in the request that convey end-user identity and/or authorization context of the
+     request. The value is a JSON object with a key-value pair for each such token. For each, in the absence of an
+     application profile specifying details, the key corresponds to the header field name containing the token,
+     and the value is the base64url encoding of the SHA-256 hash of the ASCII bytes of the header field value with any
+     leading or trailing spaces removed. The header field name MUST be normalized by converting
+     it to all lower case.
+     Header fields occurring multiple times in the request are not supported by default.
+     An application profile may specify different behavior for a key, such as
+     using a different hash algorithm or means of locating the token in the request.
+
+
+To clarify: the `ath`, `tth` and `oth` claims are each mandatory if the respective tokens are included in the request.
+
+The rules for using non-standard claims in WPTs are similar to the rules for WITs, (TODO add-claims).
+
+An example WPT might look like the following:
+
+~~~ jwt
+{::include includes/wpt.txt.out}
+~~~
+{: #example-wpt title="Example Workload Proof Token (WPT)"}
+
+The decoded JOSE header of the WPT from the example above is shown here:
+
+~~~ json
+{
+  "alg": "EdDSA",
+  "typ": "wpt+jwt"
+}
+~~~
+{: title="Example WPT JOSE Header"}
+
+The decoded JWT claims of the WPT from the example above are shown here:
+
+~~~ json
+{
+  "ath": "CL4wjfpRmNf-bdYIbYLnV9d5rMARGwKYE10wUwzC0jI",
+  "aud": "https://workload.example.com/path",
+  "exp": 1740755048,
+  "jti": "0c740386ca1dcad37de1b5f9de1b0705",
+  "wth": "aA0W_oFJK7qV7zYhcmzR1KOXVCHjd2x6c4sOQLvE90Y"
+}
+~~~
+{: title="Example WPT Claims"}
+
+An example of an HTTP request with both the WIT and WPT from prior examples is shown below:
+
+~~~ http
+{::include includes/wpt-request.txt.out}
+~~~
+{: title="Example HTTP Request with WIT and WPT"}
+
+To validate the WPT in the request, the recipient MUST ensure the following:
+
+* There is exactly one `Workload-Proof-Token` header field in the request.
+* The `Workload-Proof-Token` header field value is a single and well-formed JWT.
+* The signature algorithm in the `alg` JOSE header string-equal matches the `alg` attribute of the `jwk` in the `cnf` claim of the WIT.
+* The WPT signature is valid using the public key from the confirmation claim of the WIT.
+* The `typ` JOSE header parameter of the WPT conveys a media type of `wpt+jwt`.
+* The `aud` claim of the WPT matches the target URI, or an acceptable alias or normalization thereof, of the HTTP request
+ in which the WPT was received, ignoring any query and fragment parts. See also (TODO granular-auth) for implementation advice
+ on this verification check.
+* The `exp` claim is present and conveys a time that has not passed. WPTs with an expiration time unreasonably
+ far in the future SHOULD be rejected.
+* The `wth` claim is present and matches the hash of the token value conveyed in the `Workload-Identity-Token` header.
+* It is RECOMMENDED to check that the value of the `jti` claim has not been used before in the time window in which the
+ respective WPT would be considered valid.
+* If presented in conjunction with an OAuth access token, the value of the `ath` claim matches the hash of that token's value.
+* If presented in conjunction with a Txn-Token, the value of the `tth` claim matches the hash of that token's value.
+* If presented in conjunction with a token conveying end-user identity or authorization context, the value of
+ the `oth` claim matches the hash of that token's value.
+* If the `oth` claim is present, verify the hashes of all tokens listed in the `oth` claim per the default behavior
+ defined in {{dpop-esque-auth}} or as specified by an application specific profile. If the `oth` claim contains entries
+ that are not understood by the recipient, the WPT MUST be rejected. Conversely, additional tokens not covered by
+ the `oth` claim MUST NOT be used by the recipient to make authorization decisions.
+
+## Error Conditions
+
+Errors may occur during the processing of the WPT. If the signature verification fails for any reason,
+such as an invalid signature, an expired validity time window, or a malformed data structure, an error is returned. Typically,
+this will be in response to an API call, so an HTTP status code such as 400 (Bad Request) is appropriate. This response could
+include more details as per {{RFC9457}}, such as an indicator that the wrong key material or algorithm was used.  The use of HTTP
+status code 401 is NOT RECOMMENDED for this purpose because it requires a WWW-Authenticate with acceptable http auth mechanisms in
+the error response and an associated Authorization header in the subsequent request. The use of these headers for the WIT or WPT is not compatible
+with this specification.
+
+## Coexistence with JWT Bearer Tokens {#coexist}
+
+The WIT and WPT define new HTTP headers. They can therefore be presented along with existing headers used for JWT bearer tokens. This
+property allows for transition from mechanisms using identity tokens based on bearer JWTs to proof of possession based WITs.
+A workload may implement a policy that accepts both bearer tokens and WITs during a transition period. This policy may be configurable
+per-caller to allow the workload to reject bearer tokens from callers that support WITs. Once a deployment fully supports WITs, then the use of
+bearer tokens for identity can be disabled through policy.  Implementations should be careful when implementing such a transition strategy,
+since the decision which token to prefer is made when the caller's identity has still not been authenticated, and needs to be revalidated following the authentication step.
+
+The WIT can also coexist with tokens used to establish security context, such as transaction tokens {{?I-D.ietf-oauth-transaction-tokens}}. In this case a workload's
+authorization policy may take into account both the sending workload's identity and the information in the context token. For example, the
+identity in the WIT may be used to establish which API calls can be made and information in the context token may be used to determine
+which specific resources can be accessed.
+
+## Client Authorization Using the Workload Identity {#client-name}
+
+The server application retrieves the workload identifier from the client certificate subjectAltName, which in turn is obtained from the TLS layer. The identifier is used in authorization, accounting and auditing.
+For example, the full workload identifier may be matched against ACLs to authorize actions requested by the peer and the identifier may be included in log messages to associate actions to the client workload for audit purposes.
+A deployment may specify other authorization policies based on the specific details of how the workload identifier is constructed. The path portion of the workload identifier MUST always be considered in the scope of the trust domain.
+See (TODO granular-auth) on additional security implications of workload identifiers.
+
+# Security Considerations
+
+## Workload Identity Token and Proof of Possession
+
+The Workload Identity Token (WIT) is bound to a secret cryptographic key and is always presented with a proof of possession as described in (TODO to-wit). The WIT is a general purpose token that can be presented in multiple contexts. The WIT and its PoP are only used in the application-level options, and both are not used in MTLS. The WIT MUST NOT be used as a bearer token. While this helps reduce the sensitivity of the token it is still possible that a token and its proof of possession may be captured and replayed within the PoP's lifetime. The following are some mitigations for the capture and reuse of the proof of possession (PoP):
+
+* Preventing Eavesdropping and Interception with TLS
+
+An attacker observing or intercepting the communication channel can view the token and its proof of possession and attempt to replay it to gain an advantage. In order to prevent this the
+token and proof of possession MUST be sent over a secure, server authenticated TLS connection unless a secure channel is provided by some other mechanisms. Host name validation according
+to (server-name) MUST be performed by the client.
+
+* Limiting Proof of Possession Lifespan
+
+The proof of possession MUST be time limited. A PoP should only be valid over the time necessary for it to be successfully used for the purpose it is needed. This will typically be on the order of minutes.  PoPs received outside their validity time MUST be rejected.
+
+* Limiting Proof of Possession Scope
+
+In order to reduce the risk of theft and replay the PoP should have a limited scope. For example, a PoP may be targeted for use with a specific workload and even a specific transaction to reduce the impact of a stolen PoP. In some cases a workload may wish to reuse a PoP for a period of time or have it accepted by multiple target workloads. A careful analysis is warranted to understand the impacts to the system if a PoP is disclosed allowing it to be presented by an attacker along with a captured WIT.
+
+* Replay Protection
+
+A proof of possession includes the `jti` claim that MUST uniquely identify it, within the scope of a particular sender.
+This claim SHOULD be used by the receiver to perform basic replay protection against tokens it has already seen.
+Depending upon the design of the system it may be difficult to synchronize the replay cache across all token validators.
+If an attacker can somehow influence the identity of the validator (e.g. which cluster member receives the message) then
+replay protection would not be effective.
+
+* Binding to TLS Endpoint
+
+The POP MAY be bound to a transport layer sender such as the client identity of a TLS session or TLS channel binding parameters. The mechanisms for binding are outside the scope of this specification.
+
+## Middle Boxes {#middleboxes}
+
+In some deployments the Workload Identity Token and proof of possession may pass through multiple systems. The communication between the systems is over TLS, but the token and PoP are available in the clear at each intermediary.  While the intermediary cannot modify the token or the information within the PoP they can attempt to capture and replay the token or modify the data not protected by the PoP.
+
+Mitigations listed in (TODO app-level) can be used to provide some protection from middle boxes.
+However we note that the DPoP-inspired solution ({{dpop-esque-auth}}) does not protect major portions of the request and response and therefore does not provide protection from an actively malicious middle box.
+Deployments should perform analysis on their situation to determine if it is appropriate to trust and allow traffic to pass through a middle box.
+
+TODO integrity protection considerations
+
+## Privacy Considerations
+
+TODO: See other draft.
+
+# IANA Considerations
+
+## JSON Web Token Claims
+
+IANA is requested to add the following entries to the "JSON Web Token Claims" registry {{IANA.JWT.CLAIMS}}:
+
+| Claim Name | Claim Description | Change Controller | Reference |
+|------------|-------------------|-------------------|-----------|
+| tth | Transaction Token hash | IETF | RFC XXX, {{dpop-esque-auth}} |
+| wth | Workload Identity Token hash | IETF | RFC XXX, {{dpop-esque-auth}} |
+| oth | Other Tokens hashes | IETF | RFC XXX, {{dpop-esque-auth}} |
+
+## Media Type Registration
+
+IANA is requested to register the following entries to the "Media Types" registry {{IANA.MEDIA.TYPES}}:
+
+* application/wpt+jwt, per {{iana-wpt}}.
+
+### application/wpt+jwt {#iana-wpt}
+
+Type name: application
+
+Subtype name: wpt+jwt
+
+Required parameters: N/A
+
+Optional parameters: N/A
+
+Encoding considerations: Encoding considerations are identical to those specified for the "application/jwt" media type. See [RFC7519].
+
+Security considerations: See the Security Considerations section of RFC XXX.
+
+Interoperability considerations: N/A
+
+Published specification: RFC XXX, {{dpop-esque-auth}}.
+
+Applications that use this media type: Workloads that use these tokens to integrity-protect messages in the WIMSE workload-to-workload protocol.
+
+Fragment identifier considerations: N/A
+
+Additional information:
+
+Deprecated alias names for this type: N/A
+
+Magic number(s): N/A
+
+File extension(s): None
+
+Macintosh file type code(s): N/A
+
+Person & email address to contact for further information:
+
+See the Authors' Addresses section of RFC XXX.
+
+Intended usage: COMMON
+
+Restrictions on usage: N/A
+
+Author: See the Authors' Addresses section of RFC XXX.
+
+Change controller: Internet Engineering Task Force (iesg@ietf.org).
+
+## Hypertext Transfer Protocol (HTTP) Field Name Registration
+
+IANA is requested to register the following entries to the "Hypertext Transfer Protocol (HTTP) Field Name Registry" {{IANA.HTTP.FIELDS}}:
+
+* `Workload-Proof-Token`, per {{iana-wpt-field}}.
+
+### Workload-Proof-Token {#iana-wpt-field}
+
+* Field Name: Workload-Proof-Token
+* Status: permanent
+* Structured Type: N/A
+* Specification Document: RFC XXX, {{dpop-esque-auth}}
+* Comments: see reference above for an ABNF syntax of this field
+
+--- back
+
+# Document History
+<cref>RFC Editor: please remove before publication.</cref>
+
+## draft-ietf-schwenkschuster-s2s-jwt-pop-00
+
+Initial clone from original draft-ietf-wimse-s2s-06 which contained both, Workload Proof Token and HTTP Message Signature proof of possession mechanisms.
+
+# Acknowledgments
+{:numbered="false"}
+
+The authors would like to thank Pieter Kasselman for his detailed comments.
+
+We thank Daniel Feldman for his contributions to earlier versions of this document.
