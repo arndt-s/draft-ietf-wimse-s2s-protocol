@@ -4,10 +4,14 @@
 <meta charset="utf-8">
 <meta content="Common,Latin" name="scripts">
 <meta content="initial-scale=1.0" name="viewport">
-<title>WIMSE JWT-based Workload-to-Workload Proof Of Possession</title>
+<title>WIMSE Workload-to-Workload with Workload Proof Tokens</title>
 <meta content="Arndt Schwenkschuster" name="author">
 <meta content="
-       TODO 
+       This document defines a DPoP-inspired JWT-based profile for workload-to-workload authentication
+within the WIMSE (Workload Identity in Multi System Environments) architecture. This profile uses
+the Workload Identity Token (WIT) combined with a Workload Proof Token (WPT) to provide cryptographic
+proof of possession. The WPT is a signed JWT that demonstrates the sender's possession of the private
+key bound to the WIT, while also binding the authentication to the specific request context. 
     " name="description">
 <meta content="xml2rfc 3.30.2" name="generator">
 <meta content="workload" name="keyword">
@@ -1049,7 +1053,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">Schwenkschuster</td>
-<td class="center">Expires 26 March 2026</td>
+<td class="center">Expires 27 March 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1062,12 +1066,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-ietf-schwenkschuster-s2s-jwt-pop-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2025-09-22" class="published">22 September 2025</time>
+<time datetime="2025-09-23" class="published">23 September 2025</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-03-26">26 March 2026</time></dd>
+<dd class="expires"><time datetime="2026-03-27">27 March 2026</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1077,10 +1081,14 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </dd>
 </dl>
 </div>
-<h1 id="title">WIMSE JWT-based Workload-to-Workload Proof Of Possession</h1>
+<h1 id="title">WIMSE Workload-to-Workload with Workload Proof Tokens</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">TODO<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-1">This document defines a DPoP-inspired JWT-based profile for workload-to-workload authentication
+within the WIMSE (Workload Identity in Multi System Environments) architecture. This profile uses
+the Workload Identity Token (WIT) combined with a Workload Proof Token (WPT) to provide cryptographic
+proof of possession. The WPT is a signed JWT that demonstrates the sender's possession of the private
+key bound to the WIT, while also binding the authentication to the specific request context.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <section class="note rfcEditorRemove" id="section-note.1">
       <h2 id="name-about-this-document">
@@ -1117,7 +1125,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 26 March 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 27 March 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1238,7 +1246,50 @@ svg :is([fill="white"], [fill^="#fff"]) {
       <h2 id="name-introduction">
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
-<p id="section-1-1">TODO Test<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-1">This document specifies a JWT-based proof of possession authentication profile for workload-to-workload
+communication as part of the WIMSE architecture defined in <span>[<a href="#I-D.ietf-wimse-arch" class="cite xref">I-D.ietf-wimse-arch</a>]</span>. This profile is
+inspired by the OAuth 2.0 Demonstration of Proof of Possession (DPoP) specification <span>[<a href="#RFC9449" class="cite xref">RFC9449</a>]</span> and
+provides a JWT-centric approach to workload authentication.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">In modern distributed systems, workloads often need to authenticate to each other in environments where
+end-to-end TLS is not available due to the presence of load balancers, API gateways, service meshes,
+and other middleboxes that terminate TLS connections. In such environments, traditional bearer tokens
+are insufficient due to security concerns around token theft and replay attacks, while the complexity
+of HTTP Message Signatures may not be warranted for all deployment scenarios. This profile addresses
+these needs by providing a proof of possession mechanism that builds upon familiar JWT technologies
+while ensuring that workload identities cannot be replayed or misused, even when passing through
+untrusted intermediaries.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">This profile builds upon the base WIMSE workload-to-workload protocol and specifies the use of
+Workload Proof Tokens (WPTs) as the proof of possession mechanism. The approach combines:<a href="#section-1-3" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-1-4">
+<li id="section-1-4.1">
+          <p id="section-1-4.1.1">The Workload Identity Token (WIT) - a JWT that establishes the workload's identity and binds it to a cryptographic key<a href="#section-1-4.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-1-4.2">
+          <p id="section-1-4.2.1">The Workload Proof Token (WPT) - a short-lived JWT signed by the workload's private key that proves possession of that key<a href="#section-1-4.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="section-1-4.3">
+          <p id="section-1-4.3.1">Request binding - the WPT includes claims that bind it to the specific request and associated tokens<a href="#section-1-4.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ol>
+<p id="section-1-5">The WPT includes hashes of the WIT and any other relevant tokens present in the request (such as OAuth
+access tokens or transaction tokens), ensuring that the proof of possession is bound to the complete
+request context. This prevents token substitution attacks and provides assurance that all tokens in
+the request are being used by their legitimate holder.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">While this profile provides protection against token replay and ensures workload authentication in
+the presence of middleboxes, it does not provide the same level of message integrity protection as
+HTTP Message Signatures. Middleboxes can still modify unprotected portions of HTTP requests and
+responses. Deployments should carefully evaluate whether this level of protection is sufficient
+for their threat model, or whether the stronger integrity guarantees of HTTP Message Signatures
+are required.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-7">This profile is particularly suitable for environments that already use JWT-based technologies and
+prefer to maintain consistency with OAuth 2.0 patterns. It provides a simpler alternative to HTTP
+Message Signatures while still offering strong authentication guarantees and protection against
+token replay attacks.<a href="#section-1-7" class="pilcrow">¶</a></p>
+<p id="section-1-8">The profile defines the structure and validation requirements for WPTs, including mandatory claims,
+signature parameters, and the specific binding mechanisms that tie the proof to the request context.
+Like other WIMSE profiles, it is designed to be interoperable, allowing different authentication
+methods to be used by different workload pairs within the same distributed system as appropriate
+for their specific requirements and constraints.<a href="#section-1-8" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="conventions-and-definitions">
@@ -1259,8 +1310,8 @@ appear in all capitals, as shown here.<a href="#section-2-2" class="pilcrow">¶<
 <a href="#section-3" class="section-number selfRef">3. </a><a href="#name-dpop-inspired-authenticatio" class="section-name selfRef">DPoP-Inspired Authentication</a>
       </h2>
 <p id="section-3-1">This option, inspired by the OAuth DPoP specification <span>[<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>, uses a DPoP-like mechanism to authenticate
-the calling workload in the context of the request. The Workload Identity Token (TODO to-wit) is sent in the request as
-described in (TODO wit-http-header). An additional JWT, the Workload Proof Token (WPT), is signed by the private key
+the calling workload in the context of the request. The Workload Identity Token (WIT) as defined in Section 3.1 "The Workload Identity Token" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span> is sent in the request as
+described in Section 3.1.1 "The WIT HTTP Header" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span>. An additional JWT, the Workload Proof Token (WPT), is signed by the private key
 corresponding to the public key in the WIT. The WPT is sent in the <code>Workload-Proof-Token</code> header field of the request.
 The ABNF syntax of the <code>Workload-Proof-Token</code> header field is:<a href="#section-3-1" class="pilcrow">¶</a></p>
 <span id="name-workload-proof-token-header"></span><div id="wpt-header-abnf">
@@ -1274,7 +1325,7 @@ WPT =  JWT
 <a href="#name-workload-proof-token-header" class="selfRef">Workload-Proof-Token Header Field ABNF</a>
         </figcaption></figure>
 </div>
-<p id="section-3-3">where the <code>JWT</code> projection is defined in (TODO wit-header-abnf).<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-3">where the <code>JWT</code> projection is defined in Section 3.1.1 "The WIT HTTP Header" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span>.<a href="#section-3-3" class="pilcrow">¶</a></p>
 <p id="section-3-4">A WPT <span class="bcp14">MUST</span> contain the following:<a href="#section-3-4" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-3-5.1">
@@ -1282,7 +1333,7 @@ WPT =  JWT
 <ul class="normal">
 <li class="normal" id="section-3-5.1.2.1">
               <p id="section-3-5.1.2.1.1"><code>alg</code>: An identifier for an appropriate JWS asymmetric digital signature algorithm corresponding to
-   the confirmation key in the associated WIT. The value <span class="bcp14">MUST</span> match the <code>alg</code> value of the <code>jwk</code> in the <code>cnf</code> claim of the WIT. See (TODO to-wit) for valid values and restrictions.<a href="#section-3-5.1.2.1.1" class="pilcrow">¶</a></p>
+   the confirmation key in the associated WIT. The value <span class="bcp14">MUST</span> match the <code>alg</code> value of the <code>jwk</code> in the <code>cnf</code> claim of the WIT. See Section 3.1 "The Workload Identity Token" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span> for valid values and restrictions.<a href="#section-3-5.1.2.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-3-5.1.2.2">
               <p id="section-3-5.1.2.2.1"><code>typ</code>: the WPT is explicitly typed, as recommended in <span><a href="https://rfc-editor.org/rfc/rfc8725#section-3.11" class="relref">Section 3.11</a> of [<a href="#RFC8725" class="cite xref">RFC8725</a>]</span>,
@@ -1297,7 +1348,7 @@ WPT =  JWT
               <p id="section-3-5.2.2.1.1"><code>aud</code>: The audience <span class="bcp14">SHOULD</span> contain the HTTP target URI (<span><a href="https://rfc-editor.org/rfc/rfc9110#section-7.1" class="relref">Section 7.1</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>) of the request
    to which the WPT is attached, without query or fragment parts. However, there may be some normalization,
   rewriting or other process that requires the audience to be set to a deployment-specific value.
-  See also (TODO granular-auth) for more details.<a href="#section-3-5.2.2.1.1" class="pilcrow">¶</a></p>
+  See also Section 2.3 "Workload Identifiers and Authentication Granularity" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span> for more details.<a href="#section-3-5.2.2.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-3-5.2.2.2">
               <p id="section-3-5.2.2.2.1"><code>exp</code>: The expiration time of the WPT (as defined in <span><a href="https://rfc-editor.org/rfc/rfc7519#section-4.1.4" class="relref">Section 4.1.4</a> of [<a href="#RFC7519" class="cite xref">RFC7519</a>]</span>). WPT lifetimes <span class="bcp14">MUST</span> be short,
@@ -1307,7 +1358,7 @@ WPT =  JWT
               <p id="section-3-5.2.2.3.1"><code>jti</code>: An identifier for the token. The value <span class="bcp14">MUST</span> be unique, at least within the scope of the sender.<a href="#section-3-5.2.2.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-3-5.2.2.4">
-              <p id="section-3-5.2.2.4.1"><code>wth</code>: Hash of the Workload Identity Token, defined in (TODO to-wit). The value is the base64url encoding of the
+              <p id="section-3-5.2.2.4.1"><code>wth</code>: Hash of the Workload Identity Token, defined in Section 3.1 "The Workload Identity Token" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span>. The value is the base64url encoding of the
    SHA-256 hash of the ASCII encoding of the WIT's value.<a href="#section-3-5.2.2.4.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-3-5.2.2.5">
@@ -1336,7 +1387,7 @@ WPT =  JWT
 </li>
       </ul>
 <p id="section-3-6">To clarify: the <code>ath</code>, <code>tth</code> and <code>oth</code> claims are each mandatory if the respective tokens are included in the request.<a href="#section-3-6" class="pilcrow">¶</a></p>
-<p id="section-3-7">The rules for using non-standard claims in WPTs are similar to the rules for WITs, (TODO add-claims).<a href="#section-3-7" class="pilcrow">¶</a></p>
+<p id="section-3-7">The rules for using non-standard claims in WPTs are similar to the rules for WITs, as described in Section 3.1.2 "Including Additional Claims" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span>.<a href="#section-3-7" class="pilcrow">¶</a></p>
 <p id="section-3-8">An example WPT might look like the following:<a href="#section-3-8" class="pilcrow">¶</a></p>
 <span id="name-example-workload-proof-toke"></span><div id="example-wpt">
 <figure id="figure-2">
@@ -1435,7 +1486,7 @@ zCA
 </li>
         <li class="normal" id="section-3-17.6">
           <p id="section-3-17.6.1">The <code>aud</code> claim of the WPT matches the target URI, or an acceptable alias or normalization thereof, of the HTTP request
- in which the WPT was received, ignoring any query and fragment parts. See also (TODO granular-auth) for implementation advice
+ in which the WPT was received, ignoring any query and fragment parts. See also Section 2.3 "Workload Identifiers and Authentication Granularity" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span> for implementation advice
  on this verification check.<a href="#section-3-17.6.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-3-17.7">
@@ -1505,7 +1556,7 @@ which specific resources can be accessed.<a href="#section-3.2-2" class="pilcrow
 <p id="section-3.3-1">The server application retrieves the workload identifier from the client certificate subjectAltName, which in turn is obtained from the TLS layer. The identifier is used in authorization, accounting and auditing.
 For example, the full workload identifier may be matched against ACLs to authorize actions requested by the peer and the identifier may be included in log messages to associate actions to the client workload for audit purposes.
 A deployment may specify other authorization policies based on the specific details of how the workload identifier is constructed. The path portion of the workload identifier <span class="bcp14">MUST</span> always be considered in the scope of the trust domain.
-See (TODO granular-auth) on additional security implications of workload identifiers.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+See Section 2.3 "Workload Identifiers and Authentication Granularity" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span> on additional security implications of workload identifiers.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1520,7 +1571,7 @@ See (TODO granular-auth) on additional security implications of workload identif
         <h3 id="name-workload-identity-token-and">
 <a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-workload-identity-token-and" class="section-name selfRef">Workload Identity Token and Proof of Possession</a>
         </h3>
-<p id="section-4.1-1">The Workload Identity Token (WIT) is bound to a secret cryptographic key and is always presented with a proof of possession as described in (TODO to-wit). The WIT is a general purpose token that can be presented in multiple contexts. The WIT and its PoP are only used in the application-level options, and both are not used in MTLS. The WIT <span class="bcp14">MUST NOT</span> be used as a bearer token. While this helps reduce the sensitivity of the token it is still possible that a token and its proof of possession may be captured and replayed within the PoP's lifetime. The following are some mitigations for the capture and reuse of the proof of possession (PoP):<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-1">The Workload Identity Token (WIT) is bound to a secret cryptographic key and is always presented with a proof of possession as described in Section 3.1 "The Workload Identity Token" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span>. The WIT is a general purpose token that can be presented in multiple contexts. The WIT and its PoP are only used in the application-level options, and both are not used in MTLS. The WIT <span class="bcp14">MUST NOT</span> be used as a bearer token. While this helps reduce the sensitivity of the token it is still possible that a token and its proof of possession may be captured and replayed within the PoP's lifetime. The following are some mitigations for the capture and reuse of the proof of possession (PoP):<a href="#section-4.1-1" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-4.1-2.1">
             <p id="section-4.1-2.1.1">Preventing Eavesdropping and Interception with TLS<a href="#section-4.1-2.1.1" class="pilcrow">¶</a></p>
@@ -1528,7 +1579,7 @@ See (TODO granular-auth) on additional security implications of workload identif
         </ul>
 <p id="section-4.1-3">An attacker observing or intercepting the communication channel can view the token and its proof of possession and attempt to replay it to gain an advantage. In order to prevent this the
 token and proof of possession <span class="bcp14">MUST</span> be sent over a secure, server authenticated TLS connection unless a secure channel is provided by some other mechanisms. Host name validation according
-to (server-name) <span class="bcp14">MUST</span> be performed by the client.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+to Section 3.3.1 "Server Name Validation" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span> <span class="bcp14">MUST</span> be performed by the client.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-4.1-4.1">
             <p id="section-4.1-4.1.1">Limiting Proof of Possession Lifespan<a href="#section-4.1-4.1.1" class="pilcrow">¶</a></p>
@@ -1565,10 +1616,10 @@ replay protection would not be effective.<a href="#section-4.1-9" class="pilcrow
 <a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-middle-boxes" class="section-name selfRef">Middle Boxes</a>
         </h3>
 <p id="section-4.2-1">In some deployments the Workload Identity Token and proof of possession may pass through multiple systems. The communication between the systems is over TLS, but the token and PoP are available in the clear at each intermediary.  While the intermediary cannot modify the token or the information within the PoP they can attempt to capture and replay the token or modify the data not protected by the PoP.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
-<p id="section-4.2-2">Mitigations listed in (TODO app-level) can be used to provide some protection from middle boxes.
+<p id="section-4.2-2">Mitigations listed in Section 3 "Application Level Workload-to-Workload Authentication" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span> can be used to provide some protection from middle boxes.
 However we note that the DPoP-inspired solution (<a href="#dpop-esque-auth" class="auto internal xref">Section 3</a>) does not protect major portions of the request and response and therefore does not provide protection from an actively malicious middle box.
 Deployments should perform analysis on their situation to determine if it is appropriate to trust and allow traffic to pass through a middle box.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
-<p id="section-4.2-3">TODO integrity protection considerations<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">This profile provides authentication and limited integrity protection but does not protect the entire HTTP message. Deployments requiring stronger integrity guarantees should consider the HTTP Message Signatures profile defined in <span>[<a href="#I-D.ietf-schwenkschuster-s2s-http-sig" class="cite xref">I-D.ietf-schwenkschuster-s2s-http-sig</a>]</span>.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="privacy-considerations">
@@ -1576,7 +1627,7 @@ Deployments should perform analysis on their situation to determine if it is app
         <h3 id="name-privacy-considerations">
 <a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
         </h3>
-<p id="section-4.3-1">TODO: See other draft.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-1">Privacy considerations for this specification are the same as those described in Section 4.4 "Privacy Considerations" of <span>[<a href="#I-D.ietf-wimse-s2s-protocol" class="cite xref">I-D.ietf-wimse-s2s-protocol</a>]</span>.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1772,9 +1823,17 @@ Deployments should perform analysis on their situation to determine if it is app
         <dd>
 <span class="refAuthor">Tulshibagwale, A.</span>, <span class="refAuthor">Fletcher, G.</span>, and <span class="refAuthor">P. Kasselman</span>, <span class="refTitle">"Transaction Tokens"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-oauth-transaction-tokens-06</span>, <time datetime="2025-07-28" class="refDate">28 July 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-transaction-tokens-06">https://datatracker.ietf.org/doc/html/draft-ietf-oauth-transaction-tokens-06</a>&gt;</span>. </dd>
 <dd class="break"></dd>
+<dt id="I-D.ietf-schwenkschuster-s2s-http-sig">[I-D.ietf-schwenkschuster-s2s-http-sig]</dt>
+        <dd>
+<span class="refTitle">"*** BROKEN REFERENCE ***"</span>. </dd>
+<dd class="break"></dd>
 <dt id="I-D.ietf-wimse-arch">[I-D.ietf-wimse-arch]</dt>
         <dd>
 <span class="refAuthor">Salowey, J. A.</span>, <span class="refAuthor">Rosomakho, Y.</span>, and <span class="refAuthor">H. Tschofenig</span>, <span class="refTitle">"Workload Identity in a Multi System Environment (WIMSE) Architecture"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-wimse-arch-05</span>, <time datetime="2025-07-07" class="refDate">7 July 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-wimse-arch-05">https://datatracker.ietf.org/doc/html/draft-ietf-wimse-arch-05</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-wimse-s2s-protocol">[I-D.ietf-wimse-s2s-protocol]</dt>
+        <dd>
+<span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Salowey, J. A.</span>, <span class="refAuthor">Schwenkschuster, A.</span>, and <span class="refAuthor">Y. Sheffer</span>, <span class="refTitle">"WIMSE Workload to Workload Authentication"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-wimse-s2s-protocol-06</span>, <time datetime="2025-07-04" class="refDate">4 July 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-wimse-s2s-protocol-06">https://datatracker.ietf.org/doc/html/draft-ietf-wimse-s2s-protocol-06</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="IANA.HTTP.FIELDS">[IANA.HTTP.FIELDS]</dt>
         <dd>

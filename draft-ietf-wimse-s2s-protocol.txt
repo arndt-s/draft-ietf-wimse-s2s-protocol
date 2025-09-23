@@ -5,12 +5,12 @@
 Workload Identity in Multi System Environments               B. Campbell
 Internet-Draft                                             Ping Identity
 Intended status: Standards Track                              J. Salowey
-Expires: 26 March 2026                                          CyberArk
+Expires: 27 March 2026                                          CyberArk
                                                       A. Schwenkschuster
                                                                    SPIRL
                                                               Y. Sheffer
                                                                   Intuit
-                                                       22 September 2025
+                                                       23 September 2025
 
 
                WIMSE Workload-to-Workload Authentication
@@ -66,7 +66,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 26 March 2026.
+   This Internet-Draft will expire on 27 March 2026.
 
 Copyright Notice
 
@@ -94,8 +94,8 @@ Table of Contents
        3.1.1.  The WIT HTTP Header
        3.1.2.  Including Additional Claims
        3.1.3.  A note on iss claim and key distribution
-     3.2.  Demonstrating Proof of Possession
-     3.3.  Comparing the DPoP Inspired Option with Message Signatures
+     3.2.  Profile Selection Guidance
+     3.3.  Additional Profiles
      3.4.  Error Conditions
      3.5.  Coexistence with JWT Bearer Tokens
    4.  Using Mutual TLS for Workload-to-Workload Authentication
@@ -159,11 +159,12 @@ Table of Contents
    while the next call to Workload C is protected at the application
    level.
 
-   For application-level protection we currently propose two alternative
-   solutions, one inspired by DPoP [RFC9449] in (TODO dpop-esque-auth)
-   and one which is a profile of HTTP Message Signatures [RFC9421] in
-   (TODO http-sig-auth).  Alternative protocol-specific options are also
-   possible.
+   For application-level protection we define two alternative approaches
+   in separate companion documents: one inspired by DPoP [RFC9449]
+   defined in [I-D.ietf-schwenkschuster-s2s-jwt-pop] and one which is a
+   profile of HTTP Message Signatures [RFC9421] defined in
+   [I-D.ietf-schwenkschuster-s2s-http-sig].  Alternative protocol-
+   specific options are also possible.
 
 1.1.  Extending This Protocol to Other Use Cases
 
@@ -289,16 +290,16 @@ Table of Contents
 
    As noted in the Introduction, for many deployments communication
    between workloads cannot use end-to-end TLS.  For these deployment
-   styles, this document proposes application-level protections.
+   styles, application-level protections are required.
 
-   The current version of the document includes two alternatives, both
-   using the newly introduced Workload Identity Token (Section 3.1).
-   The first alternative (TODO dopo-esque-auth) is inspired by the OAuth
-   DPoP specification.  The second ((TODO http-sig-auth)) is based on
-   the HTTP Message Signatures RFC.  We present both alternatives and
-   expect the working group to select one of them as this document
-   progresses towards IETF consensus.  A comparison of the two
-   alternatives is attempted in Section 3.3.
+   Two alternative approaches for application-level protection are
+   defined in companion documents, both using the Workload Identity
+   Token (Section 3.1) defined in this document.  The first alternative
+   [I-D.ietf-schwenkschuster-s2s-jwt-pop] is inspired by the OAuth DPoP
+   specification and uses Workload Proof Tokens.  The second alternative
+   [I-D.ietf-schwenkschuster-s2s-http-sig] is based on HTTP Message
+   Signatures.  A comparison of the two alternatives is provided in
+   Section 3.2.
 
 3.1.  The Workload Identity Token
 
@@ -347,10 +348,11 @@ Table of Contents
             Section 3.2 of [RFC7800].  The workload MUST prove
             possession of the corresponding private key when presenting
             the WIT to another party, which can be accomplished by using
-            it in conjunction with one of the methods in (TODO dpop-
-            esque-auth) or (TODO http-sig-auth).  As such, it MUST NOT
-            be used as a bearer token and is not intended for use in the
-            Authorization header.
+            it in conjunction with one of the methods in
+            [I-D.ietf-schwenkschuster-s2s-jwt-pop] or
+            [I-D.ietf-schwenkschuster-s2s-http-sig].  As such, it MUST
+            NOT be used as a bearer token and is not intended for use in
+            the Authorization header.
 
             +  alg: Within the jwk object, an alg field MUST be present.
                Allowed values are listed in the IANA "JSON Web Signature
@@ -530,14 +532,14 @@ Table of Contents
    make use of the trust domain included in the workload identifier
    which is carried in the mandatory sub claim.
 
-3.2.  Demonstrating Proof of Possession
+3.2.  Profile Selection Guidance
 
-3.3.  Comparing the DPoP Inspired Option with Message Signatures
-
-   The two workload protection options have different strengths and
+   The two workload protection options defined in the companion
+   documents [I-D.ietf-schwenkschuster-s2s-jwt-pop] and
+   [I-D.ietf-schwenkschuster-s2s-http-sig] have different strengths and
    weaknesses regarding implementation complexity, extensibility, and
-   security.  Here is a summary of the main differences between (TODO
-   dpop-esque-auth) and (TODO http-sig-auth).
+   security.  Here is a summary of the main differences between the
+   DPoP-inspired approach and the HTTP Message Signatures approach.
 
    *  The DPoP-inspired solution is less HTTP-specific, making it easier
       to adapt for other protocols beyond HTTP.  This flexibility is
@@ -577,25 +579,41 @@ Table of Contents
       fields, but this would make it closer to trying to reinvent
       Message Signatures.
 
+3.3.  Additional Profiles
+
+   The WIMSE architecture is designed to be extensible, allowing for
+   additional authentication profiles to be defined as separate
+   companion documents.  While this document defines the foundational
+   Workload Identity Token (WIT) and establishes the framework for
+   application-level authentication, the current two profiles (JWT-based
+   proof of possession and HTTP Message Signatures) represent initial
+   approaches to address common deployment scenarios.
+
+   When developing additional profiles, implementers SHOULD use the
+   Workload Identity Token or Workload Identity Certificate as defined
+   in this document as Workload Identity presentation.
+
 3.4.  Error Conditions
 
-   Errors may occur during the processing of the message signature or
-   WPT.  If the signature verification fails for any reason, such as an
-   invalid signature, an expired validity time window, or a malformed
-   data structure, an error is returned.  Typically, this will be in
-   response to an API call, so an HTTP status code such as 400 (Bad
-   Request) is appropriate.  This response could include more details as
-   per [RFC9457], such as an indicator that the wrong key material or
+   Errors may occur during the processing of application-level
+   authentication mechanisms defined in the companion documents.  If
+   signature verification fails for any reason, such as an invalid
+   signature, an expired validity time window, or a malformed data
+   structure, an error is returned.  Typically, this will be in response
+   to an API call, so an HTTP status code such as 400 (Bad Request) is
+   appropriate.  This response could include more details as per
+   [RFC9457], such as an indicator that the wrong key material or
    algorithm was used.  The use of HTTP status code 401 is NOT
    RECOMMENDED for this purpose because it requires a WWW-Authenticate
    with acceptable http auth mechanisms in the error response and an
    associated Authorization header in the subsequent request.  The use
-   of these headers for the WIT or WPT is not compatible with this
-   specification.
+   of these headers for the WIT or proof of possession mechanisms is not
+   compatible with this specification.
 
 3.5.  Coexistence with JWT Bearer Tokens
 
-   The WIT and WPT define new HTTP headers.  They can therefore be
+   The WIT and the proof of possession mechanisms defined in the
+   companion documents use new HTTP headers.  They can therefore be
    presented along with existing headers used for JWT bearer tokens.
    This property allows for transition from mechanisms using identity
    tokens based on bearer JWTs to proof of possession based WITs.  A
@@ -796,11 +814,12 @@ Table of Contents
 
    Mitigations listed in Section 3 can be used to provide some
    protection from middle boxes.  However we note that the DPoP-inspired
-   solution (TODO dopo-esque-auth) does not protect major portions of
-   the request and response and therefore does not provide protection
-   from an actively malicious middle box.  Deployments should perform
-   analysis on their situation to determine if it is appropriate to
-   trust and allow traffic to pass through a middle box.
+   solution [I-D.ietf-schwenkschuster-s2s-jwt-pop] does not protect
+   major portions of the request and response and therefore does not
+   provide protection from an actively malicious middle box.
+   Deployments should perform analysis on their situation to determine
+   if it is appropriate to trust and allow traffic to pass through a
+   middle box.
 
 5.5.  Privacy Considerations
 
@@ -985,6 +1004,12 @@ Table of Contents
               draft-ietf-oauth-transaction-tokens-06, 28 July 2025,
               <https://datatracker.ietf.org/doc/html/draft-ietf-oauth-
               transaction-tokens-06>.
+
+   [I-D.ietf-schwenkschuster-s2s-http-sig]
+              "*** BROKEN REFERENCE ***".
+
+   [I-D.ietf-schwenkschuster-s2s-jwt-pop]
+              "*** BROKEN REFERENCE ***".
 
    [I-D.ietf-wimse-arch]
               Salowey, J. A., Rosomakho, Y., and H. Tschofenig,
