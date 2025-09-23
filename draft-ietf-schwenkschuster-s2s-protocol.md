@@ -24,21 +24,9 @@ venue:
 
 author:
  -
-    fullname: "Brian Campbell"
-    organization: "Ping Identity"
-    email: bcampbell@pingidentity.com
- -
-    fullname: "Joe Salowey"
-    organization: CyberArk
-    email: joe@salowey.net
- -
     fullname: "Arndt Schwenkschuster"
     organization: SPIRL
     email: arndts.ietf@gmail.com
- -
-    fullname: "Yaron Sheffer"
-    organization: Intuit
-    email: "yaronf.ietf@gmail.com"
 
 normative:
   RFC5234:
@@ -572,7 +560,7 @@ IANA is requested to register the "wimse" scheme to the "URI Schemes" registry {
 # Document History
 <cref>RFC Editor: please remove before publication.</cref>
 
-## draft-ietf-wimse-s2s-protocol-07
+## draft-ietf-schwenkschuster-s2s-protocol-00
 
 * Rework the WPT's oth claim
 * update the [media]typ[e] values
