@@ -3,7 +3,7 @@ title: "WIMSE Workload-to-Workload Authentication"
 abbrev: "WIMSE Workload-to-Workload"
 category: std
 
-docname: draft-ietf-schwenkschuster-s2s-protocol-latest
+docname: draft-schwenkschuster-s2s-protocol-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -560,7 +560,7 @@ IANA is requested to register the "wimse" scheme to the "URI Schemes" registry {
 # Document History
 <cref>RFC Editor: please remove before publication.</cref>
 
-## draft-ietf-schwenkschuster-s2s-protocol-00
+## draft-schwenkschuster-s2s-protocol-00
 
 * Rework the WPT's oth claim
 * update the [media]typ[e] values

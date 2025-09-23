@@ -3,7 +3,7 @@ title: "WIMSE Workload-to-Workload with Workload Proof Tokens"
 abbrev: "WIMSE Workload-to-Workload-JWT-POP"
 category: std
 
-docname: draft-ietf-schwenkschuster-s2s-jwt-pop-latest
+docname: draft-schwenkschuster-s2s-jwt-pop-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -381,7 +381,7 @@ IANA is requested to register the following entries to the "Hypertext Transfer P
 # Document History
 <cref>RFC Editor: please remove before publication.</cref>
 
-## draft-ietf-schwenkschuster-s2s-jwt-pop-00
+## draft-schwenkschuster-s2s-jwt-pop-00
 
 Initial clone from original draft-ietf-wimse-s2s-06 which contained both, Workload Proof Token and HTTP Message Signature proof of possession mechanisms.
 
