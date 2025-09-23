@@ -7,7 +7,7 @@ docname: draft-ietf-wimse-s2s-protocol-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
-consensus: true
+consensus: false
 v: 3
 area: "Applications and Real-Time"
 workgroup: "Workload Identity in Multi System Environments"
