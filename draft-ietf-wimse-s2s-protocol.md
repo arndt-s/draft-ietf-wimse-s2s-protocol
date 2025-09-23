@@ -96,8 +96,7 @@ It is an explicit goal of this protocol that a workload deployment can include b
 In other words, Workload A can call Workload B with mutual TLS protection,
 while the next call to Workload C is protected at the application level.
 
-For application-level protection we currently propose two alternative solutions, one inspired by DPoP {{?RFC9449}} in (TODO dpop-esque-auth) and
-one which is a profile of HTTP Message Signatures {{!RFC9421}} in (TODO http-sig-auth). Alternative protocol-specific options are also possible.
+For application-level protection we define two alternative approaches in separate companion documents: one inspired by DPoP {{?RFC9449}} defined in {{?I-D.ietf-schwenkschuster-s2s-jwt-pop}} and one which is a profile of HTTP Message Signatures {{!RFC9421}} defined in {{?I-D.ietf-schwenkschuster-s2s-http-sig}}. Alternative protocol-specific options are also possible.
 
 ## Extending This Protocol to Other Use Cases
 
@@ -189,13 +188,13 @@ All terminology in this document follows {{?I-D.ietf-wimse-arch}}.
 # Application Level Workload-to-Workload Authentication {#app-level}
 
 As noted in the Introduction, for many deployments communication between workloads cannot use
-end-to-end TLS. For these deployment styles, this document proposes application-level protections.
+end-to-end TLS. For these deployment styles, application-level protections are required.
 
-The current version of the document includes two alternatives, both using the newly introduced
-Workload Identity Token ({{to-wit}}). The first alternative (TODO dopo-esque-auth) is inspired by the OAuth DPoP specification.
-The second ((TODO http-sig-auth)) is based on the HTTP Message Signatures RFC. We present both alternatives and expect
-the working group to select one of them as this document progresses towards IETF consensus.
-A comparison of the two alternatives is attempted in {{app-level-comparison}}.
+Two alternative approaches for application-level protection are defined in companion documents, both using the
+Workload Identity Token ({{to-wit}}) defined in this document. The first alternative {{?I-D.ietf-schwenkschuster-s2s-jwt-pop}}
+is inspired by the OAuth DPoP specification and uses Workload Proof Tokens. The second alternative
+{{?I-D.ietf-schwenkschuster-s2s-http-sig}} is based on HTTP Message Signatures. A comparison of the two alternatives
+is provided in {{profile-selection-guidance}}.
 
 ## The Workload Identity Token {#to-wit}
 
@@ -215,7 +214,7 @@ A WIT MUST contain the following claims, except where noted:
       WITs should be refreshed regularly, e.g. on the order of hours.
     * `jti`: A unique identifier for the token. This claim is OPTIONAL. The `jti` claim is frequently useful for auditing issuance of individual WITs or to revoke them, but some token generation environments do not support it.
     * `cnf`: A confirmation claim referencing the public key of the workload.
-        * `jwk`: Within the cnf claim, a `jwk` key MUST be present that contains the public key of the workload as defined in {{Section 3.2 of RFC7800}}. The workload MUST prove possession of the corresponding private key when presenting the WIT to another party, which can be accomplished by using it in conjunction with one of the methods in (TODO dpop-esque-auth) or (TODO http-sig-auth). As such, it MUST NOT be used as a bearer token and is not intended for use in the `Authorization` header.
+        * `jwk`: Within the cnf claim, a `jwk` key MUST be present that contains the public key of the workload as defined in {{Section 3.2 of RFC7800}}. The workload MUST prove possession of the corresponding private key when presenting the WIT to another party, which can be accomplished by using it in conjunction with one of the methods in {{?I-D.ietf-schwenkschuster-s2s-jwt-pop}} or {{?I-D.ietf-schwenkschuster-s2s-http-sig}}. As such, it MUST NOT be used as a bearer token and is not intended for use in the `Authorization` header.
             * `alg`: Within the jwk object, an `alg` field MUST be present. Allowed values are listed in the IANA "JSON Web Signature and Encryption Algorithms" registry established by {{RFC7518}}. The presented proof (WPT or http-sig) MUST be produced with the algorithm specified in this field. The value `none` MUST NOT be used. Algorithms used in combination with symmetric keys MUST NOT be used. Also encryption algorithms MUST NOT be used as this would require additional key distribution outside of the WIT. To promote interoperability, the `ES256` signing algorithm MUST be supported by general purpose implementations of this document.
 
 As noted in {{I-D.ietf-wimse-arch}}, a workload identifier is a URI with a trust domain component.
@@ -338,14 +337,12 @@ This, however, could result in interoperability issues, which the following rule
 It is RECOMMENDED that the WIT carries an `iss` claim. This specification itself does not make use of a potential `iss` claim but also carries the trust domain in the workload identifier (see {{I-D.ietf-wimse-arch}} for a definition
 of the identifier and related rules). Implementations MAY include the `iss` claim in the form of a `https` URL to facilitate key distribution via mechanisms like the `jwks_uri` from {{!RFC8414}} but alternative key distribution methods may make use of the trust domain included in the workload identifier which is carried in the mandatory `sub` claim.
 
-## Demonstrating Proof of Possession
+## Profile Selection Guidance {#profile-selection-guidance}
 
-## Comparing the DPoP Inspired Option with Message Signatures {#app-level-comparison}
-
-The two workload protection options have different strengths and weaknesses regarding implementation
+The two workload protection options defined in the companion documents {{?I-D.ietf-schwenkschuster-s2s-jwt-pop}}
+and {{?I-D.ietf-schwenkschuster-s2s-http-sig}} have different strengths and weaknesses regarding implementation
 complexity, extensibility, and security.
-Here is a summary of the main differences between
-(TODO dpop-esque-auth) and (TODO http-sig-auth).
+Here is a summary of the main differences between the DPoP-inspired approach and the HTTP Message Signatures approach.
 
 - The DPoP-inspired solution is less HTTP-specific, making it easier to adapt for
 other protocols beyond HTTP. This flexibility is particularly valuable for
@@ -376,24 +373,19 @@ so it cannot be easily reused in another context, which is often a security impr
 be designed to include extensibility to sign other fields, but this would make it closer to
 trying to reinvent Message Signatures.
 
+## Additional Profiles
+
+The WIMSE architecture is designed to be extensible, allowing for additional authentication profiles to be defined as separate companion documents. While this document defines the foundational Workload Identity Token (WIT) and establishes the framework for application-level authentication, the current two profiles (JWT-based proof of possession and HTTP Message Signatures) represent initial approaches to address common deployment scenarios.
+
+When developing additional profiles, implementers SHOULD use the Workload Identity Token or Workload Identity Certificate as defined in this document as Workload Identity presentation.
+
 ## Error Conditions
 
-Errors may occur during the processing of the message signature or WPT. If the signature verification fails for any reason,
-such as an invalid signature, an expired validity time window, or a malformed data structure, an error is returned. Typically,
-this will be in response to an API call, so an HTTP status code such as 400 (Bad Request) is appropriate. This response could
-include more details as per {{RFC9457}}, such as an indicator that the wrong key material or algorithm was used.  The use of HTTP
-status code 401 is NOT RECOMMENDED for this purpose because it requires a WWW-Authenticate with acceptable http auth mechanisms in
-the error response and an associated Authorization header in the subsequent request. The use of these headers for the WIT or WPT is not compatible
-with this specification.
+Errors may occur during the processing of application-level authentication mechanisms defined in the companion documents. If signature verification fails for any reason, such as an invalid signature, an expired validity time window, or a malformed data structure, an error is returned. Typically, this will be in response to an API call, so an HTTP status code such as 400 (Bad Request) is appropriate. This response could include more details as per {{RFC9457}}, such as an indicator that the wrong key material or algorithm was used. The use of HTTP status code 401 is NOT RECOMMENDED for this purpose because it requires a WWW-Authenticate with acceptable http auth mechanisms in the error response and an associated Authorization header in the subsequent request. The use of these headers for the WIT or proof of possession mechanisms is not compatible with this specification.
 
 ## Coexistence with JWT Bearer Tokens {#coexist}
 
-The WIT and WPT define new HTTP headers. They can therefore be presented along with existing headers used for JWT bearer tokens. This
-property allows for transition from mechanisms using identity tokens based on bearer JWTs to proof of possession based WITs.
-A workload may implement a policy that accepts both bearer tokens and WITs during a transition period. This policy may be configurable
-per-caller to allow the workload to reject bearer tokens from callers that support WITs. Once a deployment fully supports WITs, then the use of
-bearer tokens for identity can be disabled through policy.  Implementations should be careful when implementing such a transition strategy,
-since the decision which token to prefer is made when the caller's identity has still not been authenticated, and needs to be revalidated following the authentication step.
+The WIT and the proof of possession mechanisms defined in the companion documents use new HTTP headers. They can therefore be presented along with existing headers used for JWT bearer tokens. This property allows for transition from mechanisms using identity tokens based on bearer JWTs to proof of possession based WITs. A workload may implement a policy that accepts both bearer tokens and WITs during a transition period. This policy may be configurable per-caller to allow the workload to reject bearer tokens from callers that support WITs. Once a deployment fully supports WITs, then the use of bearer tokens for identity can be disabled through policy. Implementations should be careful when implementing such a transition strategy, since the decision which token to prefer is made when the caller's identity has still not been authenticated, and needs to be revalidated following the authentication step.
 
 The WIT can also coexist with tokens used to establish security context, such as transaction tokens {{?I-D.ietf-oauth-transaction-tokens}}. In this case a workload's
 authorization policy may take into account both the sending workload's identity and the information in the context token. For example, the
@@ -481,7 +473,7 @@ Both the Workload Identity Token and the Workload Identity Certificate carry a p
 In some deployments the Workload Identity Token and proof of possession may pass through multiple systems. The communication between the systems is over TLS, but the token and PoP are available in the clear at each intermediary.  While the intermediary cannot modify the token or the information within the PoP they can attempt to capture and replay the token or modify the data not protected by the PoP.
 
 Mitigations listed in {{app-level}} can be used to provide some protection from middle boxes.
-However we note that the DPoP-inspired solution (TODO dopo-esque-auth) does not protect major portions of the request and response and therefore does not provide protection from an actively malicious middle box.
+However we note that the DPoP-inspired solution {{?I-D.ietf-schwenkschuster-s2s-jwt-pop}} does not protect major portions of the request and response and therefore does not provide protection from an actively malicious middle box.
 Deployments should perform analysis on their situation to determine if it is appropriate to trust and allow traffic to pass through a middle box.
 
 ## Privacy Considerations

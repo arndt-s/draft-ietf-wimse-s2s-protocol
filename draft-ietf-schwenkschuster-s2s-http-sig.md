@@ -1,9 +1,9 @@
 ---
-title: "WIMSE HTTP-sig-based Workload-to-Workload Proof Of Possession"
-abbrev: "WIMSE Workload-to-Workload-HTTP-SIG-POP"
+title: "WIMSE Workload-to-Workload with HTTP Message Signatures"
+abbrev: "WIMSE Workload-to-Workload-HTTP-SIG"
 category: std
 
-docname: draft-ietf-schwenkschuster-s2s-http-sig-pop-latest
+docname: draft-ietf-schwenkschuster-s2s-http-sig-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -48,13 +48,43 @@ informative:
 
 --- abstract
 
-TODO
+This document defines an HTTP Message Signatures-based profile for workload-to-workload authentication
+within the WIMSE (Workload Identity in Multi System Environments) architecture. This profile uses
+the Workload Identity Token (WIT) combined with HTTP Message Signatures to provide cryptographic
+proof of possession and message integrity protection. The profile leverages RFC 9421 to sign HTTP
+requests and optionally responses, ensuring that workloads can authenticate each other and verify
+message integrity at the application level, particularly in environments where end-to-end TLS is
+not feasible due to middleboxes or other infrastructure constraints.
 
 --- middle
 
 # Introduction
 
-TODO Test
+This document specifies an HTTP Message Signatures-based authentication profile for workload-to-workload
+communication as part of the WIMSE architecture defined in {{?I-D.ietf-wimse-arch}}. This profile provides
+a standardized approach for workloads to authenticate each other and protect message integrity at the
+application level.
+
+In many modern deployment environments, particularly in containerized and cloud-native architectures,
+workloads cannot rely on end-to-end TLS for security due to the presence of load balancers, API gateways,
+service meshes, and other intermediary systems. These middleboxes often terminate TLS connections, requiring
+application-level protection mechanisms to ensure workload authentication and message integrity.
+
+This profile builds upon the base WIMSE workload-to-workload protocol and specifies the use of HTTP Message
+Signatures {{!RFC9421}} as the proof of possession mechanism. The approach combines:
+
+1. The Workload Identity Token (WIT) - a JWT that establishes the workload's identity and binds it to a cryptographic key
+2. HTTP Message Signatures - providing cryptographic proof that the sender possesses the private key corresponding to the public key in the WIT
+3. Message integrity protection - ensuring that critical parts of HTTP requests and responses have not been modified
+
+This profile is particularly suitable for deployments that require strong message integrity guarantees and
+the ability to sign both requests and responses. It provides protection against message tampering by
+intermediaries while allowing for the flexibility needed in complex multi-tier architectures.
+
+The profile defines specific requirements for which HTTP message components must be signed, signature
+parameters that must be included, and validation procedures that recipients must follow. It is designed
+to be interoperable with other WIMSE authentication profiles, allowing different workload pairs within
+the same call chain to use different authentication methods as appropriate for their deployment environment.
 
 # Conventions and Definitions
 
@@ -64,7 +94,7 @@ All terminology in this document follows {{?I-D.ietf-wimse-arch}}.
 
 # Authentication Based on HTTP Message Signatures {#http-sig-auth}
 
-This option uses the Workload Identity Token (TODO to-wit) and the private key associated with its public key, to sign the request and optionally, the response. See (workload-identity-key-management) for security considerations.
+This option uses the Workload Identity Token (WIT) as defined in Section 3.1 "The Workload Identity Token" of {{?I-D.ietf-wimse-s2s-protocol}} and the private key associated with its public key, to sign the request and optionally, the response. See Section 4 "Security Considerations" of {{?I-D.ietf-wimse-s2s-protocol}} for security considerations.
 This section defines a profile of the Message Signatures specification {{!RFC9421}}.
 
 The request is signed as per {{RFC9421}}. The following derived components MUST be signed:
@@ -103,7 +133,7 @@ mechanisms in support of long-lived compute processes.
 The following signature parameters in the `Signature-Input` header MUST NOT be used:
 
 * `keyid` - The signing key is sent along with the message in the WIT. Additionally specifying the key identity would add confusion.
-* `alg` - The signature algorithm is specified in the `jwk` section of the `cnf` claim in the WIT. See (TODO to-wit) and Sec. 3.3.7 of {{RFC9421}} for details.
+* `alg` - The signature algorithm is specified in the `jwk` section of the `cnf` claim in the WIT as defined in Section 3.1 "The Workload Identity Token" of {{?I-D.ietf-wimse-s2s-protocol}}. See Sec. 3.3.7 of {{RFC9421}} for details.
 
 It is RECOMMENDED to include only one signature with the HTTP message.
 If multiple ones are included, then the signature label included in both the `Signature-Input` and `Signature` headers SHOULD
@@ -118,8 +148,7 @@ Implementors need to be aware that the WIT is extracted from the message before 
 Either client or server MAY send an `Accept-Signature` header, but is not required to do so. When this header is sent, it MUST include the header components listed above.
 
 Following is a non-normative example of a signed request and a signed response,
-where the caller is using the keys specified in (TODO example-caller-jwk)
-(TODO: it is actually using a different key but that'll need to be fixed later).
+where the caller is using the keys specified in Section 3.1 "The Workload Identity Token" of {{?I-D.ietf-wimse-s2s-protocol}}.
 
 ~~~ http
 {::include includes/sigs-request.txt.out}
@@ -168,13 +197,13 @@ which specific resources can be accessed.
 
 ## Workload Identity Token and Proof of Possession
 
-The Workload Identity Token (WIT) is bound to a secret cryptographic key and is always presented with a proof of possession as described in (TODO to-wit). The WIT is a general purpose token that can be presented in multiple contexts. The WIT and its PoP are only used in the application-level options, and both are not used in MTLS. The WIT MUST NOT be used as a bearer token. While this helps reduce the sensitivity of the token it is still possible that a token and its proof of possession may be captured and replayed within the PoP's lifetime. The following are some mitigations for the capture and reuse of the proof of possession (PoP):
+The Workload Identity Token (WIT) is bound to a secret cryptographic key and is always presented with a proof of possession as described in Section 3.1 "The Workload Identity Token" of {{?I-D.ietf-wimse-s2s-protocol}}. The WIT is a general purpose token that can be presented in multiple contexts. The WIT and its PoP are only used in the application-level options, and both are not used in MTLS. The WIT MUST NOT be used as a bearer token. While this helps reduce the sensitivity of the token it is still possible that a token and its proof of possession may be captured and replayed within the PoP's lifetime. The following are some mitigations for the capture and reuse of the proof of possession (PoP):
 
 * Preventing Eavesdropping and Interception with TLS
 
 An attacker observing or intercepting the communication channel can view the token and its proof of possession and attempt to replay it to gain an advantage. In order to prevent this the
 token and proof of possession MUST be sent over a secure, server authenticated TLS connection unless a secure channel is provided by some other mechanisms. Host name validation according
-to (TODO server-name) MUST be performed by the client.
+to Section 3.3.1 "Server Name Validation" of {{?I-D.ietf-wimse-s2s-protocol}} MUST be performed by the client.
 
 * Limiting Proof of Possession Lifespan
 
@@ -200,13 +229,13 @@ The POP MAY be bound to a transport layer sender such as the client identity of 
 
 In some deployments the Workload Identity Token and proof of possession may pass through multiple systems. The communication between the systems is over TLS, but the token and PoP are available in the clear at each intermediary.  While the intermediary cannot modify the token or the information within the PoP they can attempt to capture and replay the token or modify the data not protected by the PoP.
 
-Mitigations listed in (TODO app-level) can be used to provide some protection from middle boxes.
-However we note that the DPoP-inspired solution (TODO dpop-esque-auth) does not protect major portions of the request and response and therefore does not provide protection from an actively malicious middle box.
+Mitigations listed in Section 4.3 "Middle Boxes" of {{?I-D.ietf-wimse-s2s-protocol}} can be used to provide some protection from middle boxes.
+However we note that the DPoP-inspired solution {{?I-D.ietf-schwenkschuster-s2s-jwt-pop}} does not protect major portions of the request and response and therefore does not provide protection from an actively malicious middle box.
 Deployments should perform analysis on their situation to determine if it is appropriate to trust and allow traffic to pass through a middle box.
 
 ## Privacy Considerations
 
-TODO: See other draft.
+Privacy considerations for this specification are the same as those described in Section 4.4 "Privacy Considerations" of {{?I-D.ietf-wimse-s2s-protocol}}.
 
 # IANA Considerations
 

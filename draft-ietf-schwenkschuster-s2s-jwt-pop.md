@@ -1,5 +1,5 @@
 ---
-title: "WIMSE JWT-based Workload-to-Workload Proof Of Possession"
+title: "WIMSE Workload-to-Workload with Workload Proof Tokens"
 abbrev: "WIMSE Workload-to-Workload-JWT-POP"
 category: std
 
@@ -48,13 +48,59 @@ informative:
 
 --- abstract
 
-TODO
+This document defines a DPoP-inspired JWT-based profile for workload-to-workload authentication
+within the WIMSE (Workload Identity in Multi System Environments) architecture. This profile uses
+the Workload Identity Token (WIT) combined with a Workload Proof Token (WPT) to provide cryptographic
+proof of possession. The WPT is a signed JWT that demonstrates the sender's possession of the private
+key bound to the WIT, while also binding the authentication to the specific request context.
 
 --- middle
 
 # Introduction
 
-TODO Test
+This document specifies a JWT-based proof of possession authentication profile for workload-to-workload
+communication as part of the WIMSE architecture defined in {{?I-D.ietf-wimse-arch}}. This profile is
+inspired by the OAuth 2.0 Demonstration of Proof of Possession (DPoP) specification {{?RFC9449}} and
+provides a JWT-centric approach to workload authentication.
+
+In modern distributed systems, workloads often need to authenticate to each other in environments where
+end-to-end TLS is not available due to the presence of load balancers, API gateways, service meshes,
+and other middleboxes that terminate TLS connections. In such environments, traditional bearer tokens
+are insufficient due to security concerns around token theft and replay attacks, while the complexity
+of HTTP Message Signatures may not be warranted for all deployment scenarios. This profile addresses
+these needs by providing a proof of possession mechanism that builds upon familiar JWT technologies
+while ensuring that workload identities cannot be replayed or misused, even when passing through
+untrusted intermediaries.
+
+This profile builds upon the base WIMSE workload-to-workload protocol and specifies the use of
+Workload Proof Tokens (WPTs) as the proof of possession mechanism. The approach combines:
+
+1. The Workload Identity Token (WIT) - a JWT that establishes the workload's identity and binds it to a cryptographic key
+2. The Workload Proof Token (WPT) - a short-lived JWT signed by the workload's private key that proves possession of that key
+3. Request binding - the WPT includes claims that bind it to the specific request and associated tokens
+
+The WPT includes hashes of the WIT and any other relevant tokens present in the request (such as OAuth
+access tokens or transaction tokens), ensuring that the proof of possession is bound to the complete
+request context. This prevents token substitution attacks and provides assurance that all tokens in
+the request are being used by their legitimate holder.
+
+While this profile provides protection against token replay and ensures workload authentication in
+the presence of middleboxes, it does not provide the same level of message integrity protection as
+HTTP Message Signatures. Middleboxes can still modify unprotected portions of HTTP requests and
+responses. Deployments should carefully evaluate whether this level of protection is sufficient
+for their threat model, or whether the stronger integrity guarantees of HTTP Message Signatures
+are required.
+
+This profile is particularly suitable for environments that already use JWT-based technologies and
+prefer to maintain consistency with OAuth 2.0 patterns. It provides a simpler alternative to HTTP
+Message Signatures while still offering strong authentication guarantees and protection against
+token replay attacks.
+
+The profile defines the structure and validation requirements for WPTs, including mandatory claims,
+signature parameters, and the specific binding mechanisms that tie the proof to the request context.
+Like other WIMSE profiles, it is designed to be interoperable, allowing different authentication
+methods to be used by different workload pairs within the same distributed system as appropriate
+for their specific requirements and constraints.
 
 # Conventions and Definitions
 
@@ -65,8 +111,8 @@ All terminology in this document follows {{?I-D.ietf-wimse-arch}}.
 # DPoP-Inspired Authentication {#dpop-esque-auth}
 
 This option, inspired by the OAuth DPoP specification {{?RFC9449}}, uses a DPoP-like mechanism to authenticate
-the calling workload in the context of the request. The Workload Identity Token (TODO to-wit) is sent in the request as
-described in (TODO wit-http-header). An additional JWT, the Workload Proof Token (WPT), is signed by the private key
+the calling workload in the context of the request. The Workload Identity Token (WIT) as defined in Section 3.1 "The Workload Identity Token" of {{?I-D.ietf-wimse-s2s-protocol}} is sent in the request as
+described in Section 3.1.1 "The WIT HTTP Header" of {{?I-D.ietf-wimse-s2s-protocol}}. An additional JWT, the Workload Proof Token (WPT), is signed by the private key
 corresponding to the public key in the WIT. The WPT is sent in the `Workload-Proof-Token` header field of the request.
 The ABNF syntax of the `Workload-Proof-Token` header field is:
 
@@ -75,24 +121,24 @@ WPT =  JWT
 ~~~~
 {: #wpt-header-abnf title="Workload-Proof-Token Header Field ABNF"}
 
-where the `JWT` projection is defined in (TODO wit-header-abnf).
+where the `JWT` projection is defined in Section 3.1.1 "The WIT HTTP Header" of {{?I-D.ietf-wimse-s2s-protocol}}.
 
 A WPT MUST contain the following:
 
 * in the JOSE header:
     * `alg`: An identifier for an appropriate JWS asymmetric digital signature algorithm corresponding to
-     the confirmation key in the associated WIT. The value MUST match the `alg` value of the `jwk` in the `cnf` claim of the WIT. See (TODO to-wit) for valid values and restrictions.
+     the confirmation key in the associated WIT. The value MUST match the `alg` value of the `jwk` in the `cnf` claim of the WIT. See Section 3.1 "The Workload Identity Token" of {{?I-D.ietf-wimse-s2s-protocol}} for valid values and restrictions.
     * `typ`: the WPT is explicitly typed, as recommended in {{Section 3.11 of RFC8725}},
      using the `application/wpt+jwt` media type.
 * in the JWT claims:
     * `aud`: The audience SHOULD contain the HTTP target URI ({{Section 7.1 of RFC9110}}) of the request
      to which the WPT is attached, without query or fragment parts. However, there may be some normalization,
     rewriting or other process that requires the audience to be set to a deployment-specific value.
-    See also (TODO granular-auth) for more details.
+    See also Section 2.3 "Workload Identifiers and Authentication Granularity" of {{?I-D.ietf-wimse-s2s-protocol}} for more details.
     * `exp`: The expiration time of the WPT (as defined in {{Section 4.1.4 of RFC7519}}). WPT lifetimes MUST be short,
      e.g., on the order of minutes or seconds.
     * `jti`: An identifier for the token. The value MUST be unique, at least within the scope of the sender.
-    * `wth`: Hash of the Workload Identity Token, defined in (TODO to-wit). The value is the base64url encoding of the
+    * `wth`: Hash of the Workload Identity Token, defined in Section 3.1 "The Workload Identity Token" of {{?I-D.ietf-wimse-s2s-protocol}}. The value is the base64url encoding of the
      SHA-256 hash of the ASCII encoding of the WIT's value.
     * `ath`: Hash of the OAuth access token, if present in the request, which might convey end-user identity and/or
      authorization context of the request. The value, as per {{Section 4.1 of RFC9449}},
@@ -114,7 +160,7 @@ A WPT MUST contain the following:
 
 To clarify: the `ath`, `tth` and `oth` claims are each mandatory if the respective tokens are included in the request.
 
-The rules for using non-standard claims in WPTs are similar to the rules for WITs, (TODO add-claims).
+The rules for using non-standard claims in WPTs are similar to the rules for WITs, as described in Section 3.1.2 "Including Additional Claims" of {{?I-D.ietf-wimse-s2s-protocol}}.
 
 An example WPT might look like the following:
 
@@ -161,7 +207,7 @@ To validate the WPT in the request, the recipient MUST ensure the following:
 * The WPT signature is valid using the public key from the confirmation claim of the WIT.
 * The `typ` JOSE header parameter of the WPT conveys a media type of `wpt+jwt`.
 * The `aud` claim of the WPT matches the target URI, or an acceptable alias or normalization thereof, of the HTTP request
- in which the WPT was received, ignoring any query and fragment parts. See also (TODO granular-auth) for implementation advice
+ in which the WPT was received, ignoring any query and fragment parts. See also Section 2.3 "Workload Identifiers and Authentication Granularity" of {{?I-D.ietf-wimse-s2s-protocol}} for implementation advice
  on this verification check.
 * The `exp` claim is present and conveys a time that has not passed. WPTs with an expiration time unreasonably
  far in the future SHOULD be rejected.
@@ -206,19 +252,19 @@ which specific resources can be accessed.
 The server application retrieves the workload identifier from the client certificate subjectAltName, which in turn is obtained from the TLS layer. The identifier is used in authorization, accounting and auditing.
 For example, the full workload identifier may be matched against ACLs to authorize actions requested by the peer and the identifier may be included in log messages to associate actions to the client workload for audit purposes.
 A deployment may specify other authorization policies based on the specific details of how the workload identifier is constructed. The path portion of the workload identifier MUST always be considered in the scope of the trust domain.
-See (TODO granular-auth) on additional security implications of workload identifiers.
+See Section 2.3 "Workload Identifiers and Authentication Granularity" of {{?I-D.ietf-wimse-s2s-protocol}} on additional security implications of workload identifiers.
 
 # Security Considerations
 
 ## Workload Identity Token and Proof of Possession
 
-The Workload Identity Token (WIT) is bound to a secret cryptographic key and is always presented with a proof of possession as described in (TODO to-wit). The WIT is a general purpose token that can be presented in multiple contexts. The WIT and its PoP are only used in the application-level options, and both are not used in MTLS. The WIT MUST NOT be used as a bearer token. While this helps reduce the sensitivity of the token it is still possible that a token and its proof of possession may be captured and replayed within the PoP's lifetime. The following are some mitigations for the capture and reuse of the proof of possession (PoP):
+The Workload Identity Token (WIT) is bound to a secret cryptographic key and is always presented with a proof of possession as described in Section 3.1 "The Workload Identity Token" of {{?I-D.ietf-wimse-s2s-protocol}}. The WIT is a general purpose token that can be presented in multiple contexts. The WIT and its PoP are only used in the application-level options, and both are not used in MTLS. The WIT MUST NOT be used as a bearer token. While this helps reduce the sensitivity of the token it is still possible that a token and its proof of possession may be captured and replayed within the PoP's lifetime. The following are some mitigations for the capture and reuse of the proof of possession (PoP):
 
 * Preventing Eavesdropping and Interception with TLS
 
 An attacker observing or intercepting the communication channel can view the token and its proof of possession and attempt to replay it to gain an advantage. In order to prevent this the
 token and proof of possession MUST be sent over a secure, server authenticated TLS connection unless a secure channel is provided by some other mechanisms. Host name validation according
-to (server-name) MUST be performed by the client.
+to Section 3.3.1 "Server Name Validation" of {{?I-D.ietf-wimse-s2s-protocol}} MUST be performed by the client.
 
 * Limiting Proof of Possession Lifespan
 
@@ -244,15 +290,15 @@ The POP MAY be bound to a transport layer sender such as the client identity of 
 
 In some deployments the Workload Identity Token and proof of possession may pass through multiple systems. The communication between the systems is over TLS, but the token and PoP are available in the clear at each intermediary.  While the intermediary cannot modify the token or the information within the PoP they can attempt to capture and replay the token or modify the data not protected by the PoP.
 
-Mitigations listed in (TODO app-level) can be used to provide some protection from middle boxes.
+Mitigations listed in Section 3 "Application Level Workload-to-Workload Authentication" of {{?I-D.ietf-wimse-s2s-protocol}} can be used to provide some protection from middle boxes.
 However we note that the DPoP-inspired solution ({{dpop-esque-auth}}) does not protect major portions of the request and response and therefore does not provide protection from an actively malicious middle box.
 Deployments should perform analysis on their situation to determine if it is appropriate to trust and allow traffic to pass through a middle box.
 
-TODO integrity protection considerations
+This profile provides authentication and limited integrity protection but does not protect the entire HTTP message. Deployments requiring stronger integrity guarantees should consider the HTTP Message Signatures profile defined in {{?I-D.ietf-schwenkschuster-s2s-http-sig}}.
 
 ## Privacy Considerations
 
-TODO: See other draft.
+Privacy considerations for this specification are the same as those described in Section 4.4 "Privacy Considerations" of {{?I-D.ietf-wimse-s2s-protocol}}.
 
 # IANA Considerations
 
