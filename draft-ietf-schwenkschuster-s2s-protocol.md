@@ -3,7 +3,7 @@ title: "WIMSE Workload-to-Workload Authentication"
 abbrev: "WIMSE Workload-to-Workload"
 category: std
 
-docname: draft-ietf-wimse-s2s-protocol-latest
+docname: draft-ietf-schwenkschuster-s2s-protocol-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
