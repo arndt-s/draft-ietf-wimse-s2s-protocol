@@ -2,15 +2,10 @@
 
 
 
-Workload Identity in Multi System Environments               B. Campbell
-Internet-Draft                                             Ping Identity
-Intended status: Standards Track                              J. Salowey
-Expires: 27 March 2026                                          CyberArk
-                                                      A. Schwenkschuster
-                                                                   SPIRL
-                                                              Y. Sheffer
-                                                                  Intuit
-                                                       23 September 2025
+Workload Identity in Multi System Environments        A. Schwenkschuster
+Internet-Draft                                                     SPIRL
+Intended status: Standards Track                       23 September 2025
+Expires: 27 March 2026
 
 
                WIMSE Workload-to-Workload Authentication
@@ -120,7 +115,7 @@ Table of Contents
      7.1.  Normative References
      7.2.  Informative References
    Appendix A.  Document History
-     A.1.  draft-ietf-wimse-s2s-protocol-07
+     A.1.  draft-ietf-schwenkschuster-s2s-protocol-00
      A.2.  draft-ietf-wimse-s2s-protocol-06
      A.3.  draft-ietf-wimse-s2s-protocol-05
      A.4.  draft-ietf-wimse-s2s-protocol-04
@@ -129,7 +124,7 @@ Table of Contents
      A.7.  draft-ietf-wimse-s2s-protocol-01
      A.8.  draft-ietf-wimse-s2s-protocol-00
    Acknowledgments
-   Authors' Addresses
+   Author's Address
 
 1.  Introduction
 
@@ -1054,7 +1049,7 @@ Appendix A.  Document History
 
    // RFC Editor: please remove before publication.
 
-A.1.  draft-ietf-wimse-s2s-protocol-07
+A.1.  draft-ietf-schwenkschuster-s2s-protocol-00
 
    *  Rework the WPT's oth claim
 
@@ -1146,23 +1141,8 @@ Acknowledgments
    We thank Daniel Feldman for his contributions to earlier versions of
    this document.
 
-Authors' Addresses
-
-   Brian Campbell
-   Ping Identity
-   Email: bcampbell@pingidentity.com
-
-
-   Joe Salowey
-   CyberArk
-   Email: joe@salowey.net
-
+Author's Address
 
    Arndt Schwenkschuster
    SPIRL
    Email: arndts.ietf@gmail.com
-
-
-   Yaron Sheffer
-   Intuit
-   Email: yaronf.ietf@gmail.com
