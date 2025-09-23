@@ -9,7 +9,7 @@ Expires: 27 March 2026
 
 
                WIMSE Workload-to-Workload Authentication
-             draft-ietf-schwenkschuster-s2s-protocol-latest
+               draft-schwenkschuster-s2s-protocol-latest
 
 Abstract
 
@@ -35,8 +35,7 @@ About This Document
    The latest revision of this draft can be found at https://ietf-wg-
    wimse.github.io/draft-ietf-wimse-s2s-protocol/draft-ietf-wimse-s2s-
    protocol.html.  Status information for this document may be found at
-   https://datatracker.ietf.org/doc/draft-ietf-schwenkschuster-s2s-
-   protocol/.
+   https://datatracker.ietf.org/doc/draft-schwenkschuster-s2s-protocol/.
 
    Discussion of this document takes place on the Workload Identity in
    Multi System Environments Working Group mailing list
@@ -115,7 +114,7 @@ Table of Contents
      7.1.  Normative References
      7.2.  Informative References
    Appendix A.  Document History
-     A.1.  draft-ietf-schwenkschuster-s2s-protocol-00
+     A.1.  draft-schwenkschuster-s2s-protocol-00
      A.2.  draft-ietf-wimse-s2s-protocol-06
      A.3.  draft-ietf-wimse-s2s-protocol-05
      A.4.  draft-ietf-wimse-s2s-protocol-04
@@ -1049,7 +1048,7 @@ Appendix A.  Document History
 
    // RFC Editor: please remove before publication.
 
-A.1.  draft-ietf-schwenkschuster-s2s-protocol-00
+A.1.  draft-schwenkschuster-s2s-protocol-00
 
    *  Rework the WPT's oth claim
 

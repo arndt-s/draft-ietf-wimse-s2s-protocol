@@ -9,7 +9,7 @@ Expires: 27 March 2026
 
 
          WIMSE Workload-to-Workload with Workload Proof Tokens
-             draft-ietf-schwenkschuster-s2s-jwt-pop-latest
+                draft-schwenkschuster-s2s-jwt-pop-latest
 
 Abstract
 
@@ -29,8 +29,7 @@ About This Document
    The latest revision of this draft can be found at https://ietf-wg-
    wimse.github.io/draft-ietf-wimse-s2s-protocol/draft-ietf-wimse-s2s-
    protocol.html.  Status information for this document may be found at
-   https://datatracker.ietf.org/doc/draft-ietf-schwenkschuster-s2s-jwt-
-   pop/.
+   https://datatracker.ietf.org/doc/draft-schwenkschuster-s2s-jwt-pop/.
 
    Discussion of this document takes place on the Workload Identity in
    Multi System Environments Working Group mailing list
@@ -94,7 +93,7 @@ Table of Contents
      6.1.  Normative References
      6.2.  Informative References
    Appendix A.  Document History
-     A.1.  draft-ietf-schwenkschuster-s2s-jwt-pop-00
+     A.1.  draft-schwenkschuster-s2s-jwt-pop-00
    Acknowledgments
    Author's Address
 
@@ -740,7 +739,7 @@ Appendix A.  Document History
 
    // RFC Editor: please remove before publication.
 
-A.1.  draft-ietf-schwenkschuster-s2s-jwt-pop-00
+A.1.  draft-schwenkschuster-s2s-jwt-pop-00
 
    Initial clone from original draft-ietf-wimse-s2s-06 which contained
    both, Workload Proof Token and HTTP Message Signature proof of
